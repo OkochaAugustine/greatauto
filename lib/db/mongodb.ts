@@ -1,36 +1,44 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "";
+const MONGODB_URI = process.env.MONGODB_URI;
+
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var mongoose: MongooseCache | undefined;
+}
 
 let cached = global.mongoose;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = global.mongoose = {
+    conn: null,
+    promise: null,
+  };
 }
 
-async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
+export default async function connectDB() {
+  if (!MONGODB_URI) {
+    throw new Error(
+      "MONGODB_URI is not defined. Add it to your environment variables before connecting to MongoDB."
+    );
   }
 
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
+  if (cached!.conn) {
+    return cached!.conn;
+  }
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
+  if (!cached!.promise) {
+    cached!.promise = mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
     });
   }
 
-  try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    throw e;
-  }
+  cached!.conn = await cached!.promise;
 
-  return cached.conn;
+  return cached!.conn;
 }
-
-export default connectDB;

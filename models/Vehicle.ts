@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-export interface IVehicle extends Document {
+export interface IVehicle {
   title: string;
   make: string;
   model: string;
@@ -44,7 +44,7 @@ export interface IVehicle extends Document {
   };
 }
 
-const VehicleSchema: Schema = new Schema(
+const VehicleSchema = new Schema<IVehicle>(
   {
     title: { type: String, required: true },
     make: { type: String, required: true },
