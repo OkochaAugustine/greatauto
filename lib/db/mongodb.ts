@@ -1,6 +1,13 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const uri = process.env.MONGODB_URI;
+
+if (!uri) {
+  throw new Error("Please define the MONGODB_URI environment variable.");
+}
+
+// After the check above, TypeScript knows this is a string.
+const MONGODB_URI: string = uri;
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -9,36 +16,28 @@ interface MongooseCache {
 
 declare global {
   // eslint-disable-next-line no-var
-  var mongoose: MongooseCache | undefined;
+  var mongooseCache: MongooseCache | undefined;
 }
 
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = {
+const cached =
+  global.mongooseCache ??
+  (global.mongooseCache = {
     conn: null,
     promise: null,
-  };
-}
+  });
 
 export default async function connectDB() {
-  if (!MONGODB_URI) {
-    throw new Error(
-      "MONGODB_URI is not defined. Add it to your environment variables before connecting to MongoDB."
-    );
+  if (cached.conn) {
+    return cached.conn;
   }
 
-  if (cached!.conn) {
-    return cached!.conn;
-  }
-
-  if (!cached!.promise) {
-    cached!.promise = mongoose.connect(MONGODB_URI, {
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
     });
   }
 
-  cached!.conn = await cached!.promise;
+  cached.conn = await cached.promise;
 
-  return cached!.conn;
+  return cached.conn;
 }
